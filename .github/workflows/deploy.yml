@@ -1,0 +1,51 @@
+name: "Terragrunt Deploy"
+
+on:
+  workflow_dispatch:
+    inputs:
+      aws_access_key_id:
+        description: "AWS Access Key ID"
+        required: true
+      aws_secret_access_key:
+        description: "AWS Secret Access Key"
+        required: true
+      command:
+        description: "Terragrunt command to run"
+        required: true
+        default: "apply"
+        type: choice
+        options:
+          - plan
+          - apply
+          - destroy
+
+jobs:
+  terragrunt:
+    name: "Terragrunt Deployment"
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ github.event.inputs.aws_access_key_id }}
+      AWS_SECRET_ACCESS_KEY: ${{ github.event.inputs.aws_secret_access_key }}
+      AWS_DEFAULT_REGION: us-east-1
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.5.0
+
+      - name: Setup Terragrunt
+        uses: autero1/action-terragrunt@v1.3.2
+        with:
+          terragrunt_version: 0.50.0
+
+      - name: Terragrunt Init & Run
+        working-directory: ./infrastructure/dev/ec2
+        run: |
+          # The --terragrunt-non-interactive flag is crucial for CI
+          # The S3 backend and DynamoDB table will be created automatically if they don't exist
+          terragrunt init --terragrunt-non-interactive
+          terragrunt ${{ github.event.inputs.command }} --terragrunt-non-interactive -auto-approve
