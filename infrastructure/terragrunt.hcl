@@ -3,7 +3,8 @@ locals {
   env_vars = read_terragrunt_config(find_in_parent_folders("env.hcl"))
 
   # Common variables
-  aws_region = local.env_vars.locals.region
+  # Prioritize TG_REGION env var, then fallback to env.hcl, then default to us-east-1
+  aws_region = get_env("TG_REGION", local.env_vars.locals.region)
   project    = "simple-ec2-project"
   owner      = "devops-team"
 }

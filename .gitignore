@@ -1,0 +1,8 @@
+.zencoder
+.zenflow
+.terragrunt-cache
+*.tfstate
+*.tfstate.backup
+.terraform
+backend.tf
+provider.tf

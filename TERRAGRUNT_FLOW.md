@@ -66,7 +66,10 @@ Terragrunt collects everything in the `inputs = { ... }` blocks and passes them 
 ### Step 5: Backend & Provider Generation
 The `generate` blocks in the root `terragrunt.hcl` create actual `.tf` files on the fly:
 - **`backend.tf`**: Automatically configures S3/DynamoDB for state locking.
-- **`provider.tf`**: Configures the AWS provider with the region fetched from `env.hcl`.
+- **`provider.tf`**: Configures the AWS provider. The region is picked with this priority:
+  1. `TG_REGION` environment variable (set by GitHub Action input).
+  2. `region` variable from `env.hcl`.
+  3. Default region.
 
 ---
 
@@ -106,3 +109,12 @@ You can link secrets and variables to specific GitHub Environments (`dev`, `prod
 - `read_terragrunt_config()`: Imports variables from another `.hcl` file so you can reuse them.
 - `get_aws_account_id()`: Used in the root config to make the S3 bucket name globally unique.
 - `path_relative_to_include()`: Ensures that if you are in `dev/ec2`, your S3 state key is also `dev/ec2/terraform.tfstate`.
+
+---
+
+## 5. Ignored Files & Security
+The following files are ignored in `.gitignore` to prevent leaking secrets or tracking temporary files:
+- `.zencoder` & `.zenflow`: AI and local workflow metadata.
+- `.terragrunt-cache`: Temporary files created during Terragrunt execution.
+- `*.tfstate`: Local state files (always use the S3 backend instead).
+- `backend.tf` & `provider.tf`: These are **auto-generated** by Terragrunt.
