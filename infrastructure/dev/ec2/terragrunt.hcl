@@ -12,7 +12,7 @@ locals {
 
   instance_name = "web-server-${local.env_vars.locals.environment}"
   instance_type = "t3.micro"
-  ami_id        = "ami-0c55b159cbfafe1f0" 
+  ami_id        = "ami-0ec10929233384c7f" # User provided AMI
 }
 
 inputs = {
