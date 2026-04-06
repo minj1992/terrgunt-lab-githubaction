@@ -1,0 +1,49 @@
+name: "Terraform Migration Plan"
+
+on:
+  workflow_dispatch:
+    inputs:
+      aws_access_key_id:
+        description: "AWS Access Key ID"
+        required: true
+      aws_secret_access_key:
+        description: "AWS Secret Access Key"
+        required: true
+      aws_account_id:
+        description: "AWS Account ID"
+        required: true
+      region:
+        description: "AWS Region"
+        required: true
+        default: "us-east-1"
+
+jobs:
+  terraform-plan:
+    name: "Terraform Plan (Migration Verification)"
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ github.event.inputs.aws_access_key_id }}
+      AWS_SECRET_ACCESS_KEY: ${{ github.event.inputs.aws_secret_access_key }}
+      AWS_DEFAULT_REGION: ${{ github.event.inputs.region }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.5.0
+
+      - name: Terraform Init
+        working-directory: ./infrastructure/dev/native
+        run: |
+          terraform init \
+            -backend-config="bucket=simple-ec2-project-terraform-state-${{ github.event.inputs.aws_account_id }}" \
+            -backend-config="key=dev/ec2/terraform.tfstate" \
+            -backend-config="region=${{ github.event.inputs.region }}" \
+            -backend-config="dynamodb_table=simple-ec2-project-lock-table"
+
+      - name: Terraform Plan
+        working-directory: ./infrastructure/dev/native
+        run: terraform plan -var="aws_account_id=${{ github.event.inputs.aws_account_id }}" -var="aws_region=${{ github.event.inputs.region }}"
