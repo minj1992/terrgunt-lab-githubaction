@@ -20,3 +20,5 @@ inputs = {
   instance_type = local.instance_type
   ami_id        = local.ami_id
 }
+
+#
