@@ -1,4 +1,4 @@
-name: "Terragrunt Deploy testing approver"
+name: "Terragrunt Deploy"
 
 on:
   workflow_dispatch:
@@ -32,9 +32,9 @@ jobs:
     name: "Terragrunt Deployment"
     runs-on: ubuntu-latest
 
-    # 🔐 Dynamic environment mapping (approval only for prod)
+    # 🔐 Use Deployment environment for prod (approval will trigger here)
     environment:
-      name: ${{ github.event.inputs.environment == 'prod' && 'production' || 'development' }}
+      name: ${{ github.event.inputs.environment == 'prod' && 'Deployment' || 'development' }}
 
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
