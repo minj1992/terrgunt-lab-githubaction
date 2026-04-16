@@ -1,0 +1,76 @@
+name: "Terragrunt Deploy testing approver"
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to deploy (dev/prod)"
+        required: true
+        default: "dev"
+        type: choice
+        options:
+          - dev
+          - prod
+
+      region:
+        description: "AWS Region"
+        required: true
+        default: "us-east-1"
+
+      command:
+        description: "Terragrunt command to run"
+        required: true
+        default: "plan"
+        type: choice
+        options:
+          - plan
+          - apply
+          - destroy
+
+jobs:
+  terragrunt:
+    name: "Terragrunt Deployment"
+    runs-on: ubuntu-latest
+
+    # 🔐 Dynamic environment mapping (approval only for prod)
+    environment:
+      name: ${{ github.event.inputs.environment == 'prod' && 'production' || 'development' }}
+
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: ${{ github.event.inputs.region }}
+      TG_REGION: ${{ github.event.inputs.region }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.5.0
+
+      - name: Setup Terragrunt
+        uses: autero1/action-terragrunt@v1.3.2
+        with:
+          terragrunt_version: 0.50.0
+
+      - name: Terragrunt Init
+        working-directory: ./infrastructure/${{ github.event.inputs.environment }}/ec2
+        run: terragrunt init --terragrunt-non-interactive
+
+      - name: Terragrunt Plan
+        if: ${{ github.event.inputs.command == 'plan' }}
+        working-directory: ./infrastructure/${{ github.event.inputs.environment }}/ec2
+        run: terragrunt plan --terragrunt-non-interactive
+
+      - name: Terragrunt Apply
+        if: ${{ github.event.inputs.command == 'apply' }}
+        working-directory: ./infrastructure/${{ github.event.inputs.environment }}/ec2
+        run: terragrunt apply --terragrunt-non-interactive -auto-approve
+
+      - name: Terragrunt Destroy
+        if: ${{ github.event.inputs.command == 'destroy' }}
+        working-directory: ./infrastructure/${{ github.event.inputs.environment }}/ec2
+        run: terragrunt destroy --terragrunt-non-interactive
